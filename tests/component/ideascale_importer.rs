@@ -1,4 +1,5 @@
-use crate::common::db_event::{self, configure_new_database};
+use crate::common::db_event_mock::db_event;
+use crate::common::ideascale_mock::ideascale;
 use std::fs;
 use std::process::Command;
 
@@ -6,28 +7,23 @@ use std::process::Command;
 async fn import_all() {
     //Setup event database
     let event_id = 1;
-
-    let mut configuration =
-        db_event::get_configuration().expect("Failed to read db event configuration");
-    //randomize db name
-    configuration.database_name = "event_db_test1".to_string();
-
-    let connection = configure_new_database(&configuration).await;
-
+    let mut db_event_config = db_event::get_configuration_with_random_db_name()
+        .expect("Failed to read db event configuration");
+    let connection_string = db_event_config.connection_string();
+    let db_event_connection = db_event::configure_new_database(&db_event_config).await;
     //insert a empty event to pass to ideascale importer
     sqlx::query!(r#"INSERT INTO event (row_id) VALUES($1)"#, event_id)
-        .execute(&connection)
+        .execute(&db_event_connection)
         .await
         .expect("Failed to insert event id into event database");
 
+    let ideascale_config =
+        ideascale::get_configuration().expect("Failed to read ideascale configuration");
     let ideascale_importer_path =
         fs::canonicalize("../utilities/ideascale-importer").expect("Ideascale path not correct");
-    let api_token = "4dc0a585-ad0a-476f-8dd9-56667edb9353";
-    let ideascale_api_url = "https://cat-test.ideascaleapp.com";
+
     let campaign_group_id = "33";
     let stage_id = "44";
-
-    let connection_string = configuration.connection_string();
 
     Command::new("poetry")
         .current_dir(&ideascale_importer_path)
@@ -43,11 +39,11 @@ async fn import_all() {
             "ideascale",
             "import-all",
             "--api-token",
-            api_token,
+            &ideascale_config.api_token,
             "--database-url",
             &connection_string,
             "--ideascale-api-url",
-            ideascale_api_url,
+            &ideascale_config.api_url,
             "--event-id",
             &event_id.to_string(),
             "--campaign-group-id",
