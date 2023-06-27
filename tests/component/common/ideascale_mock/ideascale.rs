@@ -2,8 +2,8 @@ use config::{Config, ConfigError, File, FileFormat};
 
 #[derive(serde::Deserialize)]
 pub struct IdeascaleSettings {
-    pub api_token: String,
     pub api_url: String,
+    pub api_token: String,
 }
 
 pub fn get_configuration() -> Result<IdeascaleSettings, ConfigError> {
