@@ -1,7 +1,7 @@
-use std::str::FromStr;
-
 use config::{Config, ConfigError, File, FileFormat};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use std::str::FromStr;
+use uuid::Uuid;
 
 mod embedded {
     use refinery::embed_migrations;
@@ -22,6 +22,21 @@ pub fn get_configuration() -> Result<DatabaseSettings, ConfigError> {
         "/home/stefano/work/catalyst-core/tests/component/common/db_event_configuration",
         FileFormat::Yaml,
     ));
+    let conf = builder.build();
+    match conf {
+        Ok(conf) => conf.try_deserialize(),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn get_configuration_with_random_db_name() -> Result<DatabaseSettings, ConfigError> {
+    let builder = Config::builder()
+        .add_source(File::new(
+            "/home/stefano/work/catalyst-core/tests/component/common/db_event_configuration",
+            FileFormat::Yaml,
+        ))
+        .set_override("database_name", Uuid::new_v4().to_string())
+        .expect("Database name key error");
     let conf = builder.build();
     match conf {
         Ok(conf) => conf.try_deserialize(),
