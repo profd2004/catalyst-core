@@ -1,5 +1,5 @@
 use config::{Config, ConfigError, File, FileFormat};
-use sqlx::{Connection, Executor, PgConnection, PgPool};
+use sqlx::{Connection, Executor, PgConnection, PgPool, Pool, Postgres};
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -81,4 +81,13 @@ pub async fn configure_new_database(config: &DatabaseSettings) -> PgPool {
         )
         .expect("Failed to migrate the database");
     connection_pool
+}
+
+pub async fn insert_event(db_event_connection: Pool<Postgres>, event_id: i32){
+
+    sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, 'test', 'test_description', 1, 1)"#, event_id)
+        .execute(&db_event_connection)
+        .await
+        .expect("Failed to insert event id into event database");
+
 }

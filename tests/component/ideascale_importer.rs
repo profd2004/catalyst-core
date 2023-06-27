@@ -12,18 +12,15 @@ async fn import_all() {
     let connection_string = db_event_config.connection_string();
     let db_event_connection = db_event::configure_new_database(&db_event_config).await;
     //insert a empty event to pass to ideascale importer
-    sqlx::query!(r#"INSERT INTO event (row_id) VALUES($1)"#, event_id)
-        .execute(&db_event_connection)
-        .await
-        .expect("Failed to insert event id into event database");
+    db_event::insert_event(db_event_connection, event_id).await;
 
     let ideascale_config =
         ideascale::get_configuration().expect("Failed to read ideascale configuration");
     let ideascale_importer_path =
         fs::canonicalize("../utilities/ideascale-importer").expect("Ideascale path not correct");
 
-    let campaign_group_id = "33";
-    let stage_id = "44";
+    let campaign_group_id = "87";
+    let stage_id = "138";
 
     Command::new("poetry")
         .current_dir(&ideascale_importer_path)
