@@ -17,6 +17,7 @@ pub struct DatabaseSettings {
     pub database_name: String,
 }
 
+///Load db event configuration from file
 pub fn get_configuration() -> Result<DatabaseSettings, ConfigError> {
     let builder = Config::builder().add_source(File::new(
         "/home/stefano/work/catalyst-core/tests/component/common/db_event_configuration",
@@ -29,6 +30,7 @@ pub fn get_configuration() -> Result<DatabaseSettings, ConfigError> {
     }
 }
 
+///Load db event configuration from disk with a random database name
 pub fn get_configuration_with_random_db_name() -> Result<DatabaseSettings, ConfigError> {
     let builder = Config::builder()
         .add_source(File::new(
@@ -45,6 +47,7 @@ pub fn get_configuration_with_random_db_name() -> Result<DatabaseSettings, Confi
 }
 
 impl DatabaseSettings {
+    ///Return connection string to the database
     pub fn connection_string(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -52,6 +55,7 @@ impl DatabaseSettings {
         )
     }
 
+    ///Return connection string to postgres instance
     pub fn connection_string_without_db_name(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}",
@@ -60,9 +64,9 @@ impl DatabaseSettings {
     }
 }
 
-//Create and migrate new event database
+///Create and migrate new event database
 pub async fn configure_new_database(config: &DatabaseSettings) -> PgPool {
-    //Create
+    //create
     let mut connection = PgConnection::connect(&config.connection_string_without_db_name())
         .await
         .expect("Failed to connect to Postgres");
@@ -73,7 +77,7 @@ pub async fn configure_new_database(config: &DatabaseSettings) -> PgPool {
     let connection_pool = PgPool::connect(&config.connection_string())
         .await
         .expect("Failed to connect to Postgres.");
-    //Migrate
+    //migrate
     embedded::migrations::runner()
         .run(
             &mut refinery::config::Config::from_str(&config.connection_string())
@@ -83,8 +87,8 @@ pub async fn configure_new_database(config: &DatabaseSettings) -> PgPool {
     connection_pool
 }
 
+///Insert new event with event_id and not nullable fields in the event table
 pub async fn insert_event(db_event_connection: Pool<Postgres>, event_id: i32){
-
     sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, 'test', 'test_description', 1, 1)"#, event_id)
         .execute(&db_event_connection)
         .await

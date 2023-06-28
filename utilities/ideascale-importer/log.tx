@@ -1,0 +1,22 @@
+2023-06-28T16:10:22.274146+0200 INFO     Connecting to the database 
+2023-06-28T16:10:22.310090+0200 INFO     Request started req_id=1 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/campaigns/groups"
+2023-06-28T16:10:23.149205+0200 INFO     Request finished req_id=1 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/campaigns/groups" bytes_received=64358
+2023-06-28T16:10:23.152854+0200 INFO     Request started req_id=2 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/0/50"
+2023-06-28T16:10:23.153401+0200 INFO     Request started req_id=3 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/1/50"
+2023-06-28T16:10:23.153767+0200 INFO     Request started req_id=4 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/2/50"
+2023-06-28T16:10:23.154117+0200 INFO     Request started req_id=5 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/3/50"
+2023-06-28T16:10:23.154470+0200 INFO     Request started req_id=6 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/4/50"
+2023-06-28T16:10:23.154835+0200 INFO     Request started req_id=7 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/5/50"
+2023-06-28T16:10:23.155259+0200 INFO     Request started req_id=8 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/6/50"
+2023-06-28T16:10:23.155664+0200 INFO     Request started req_id=9 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/7/50"
+2023-06-28T16:10:23.156181+0200 INFO     Request started req_id=10 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/8/50"
+2023-06-28T16:10:23.157707+0200 INFO     Request started req_id=11 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/9/50"
+2023-06-28T16:10:25.447570+0200 INFO     Request finished req_id=11 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/9/50" bytes_received=297
+2023-06-28T16:10:25.677192+0200 INFO     Request finished req_id=3 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/1/50" bytes_received=297
+2023-06-28T16:10:25.679807+0200 INFO     Request finished req_id=4 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/2/50" bytes_received=297
+2023-06-28T16:10:25.686107+0200 INFO     Request finished req_id=10 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/8/50" bytes_received=297
+2023-06-28T16:10:25.736008+0200 INFO     Request finished req_id=5 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/3/50" bytes_received=297
+2023-06-28T16:10:25.805257+0200 INFO     Request finished req_id=2 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/0/50" bytes_received=297
+2023-06-28T16:10:25.806476+0200 INFO     Request finished req_id=6 method="GET" url="https://temp-cardano-sandbox.ideascale.com/a/rest/v1/stages/138/ideas/4/50" bytes_received=297
+2023-06-28T16:10:25.809670+0200 ERROR    404 
+b'{"apiToken":"8bf71053-8437-400c-bd9c-45653796a999","apiVersion":"v1","cause":"","memberName":"stefano.cunego cunego","communityName":"Temporary Cardano Sandbox","requestUri":"/a/rest/v1/stages/138/ideas/0/50","communityId":170,"message":"Stage not found","key":"STAGE_NOT_FOUND","memberId":189900}') 

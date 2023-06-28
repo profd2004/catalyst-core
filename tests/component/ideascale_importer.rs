@@ -5,13 +5,13 @@ use std::process::Command;
 
 #[tokio::test]
 async fn import_all() {
-    //Setup event database
+    //setup event database
     let event_id = 1;
-    let mut db_event_config = db_event::get_configuration_with_random_db_name()
+    let db_event_config = db_event::get_configuration_with_random_db_name()
         .expect("Failed to read db event configuration");
     let connection_string = db_event_config.connection_string();
     let db_event_connection = db_event::configure_new_database(&db_event_config).await;
-    //insert a empty event to pass to ideascale importer
+    //insert a basic event
     db_event::insert_event(db_event_connection, event_id).await;
 
     let ideascale_config =
@@ -20,7 +20,7 @@ async fn import_all() {
         fs::canonicalize("../utilities/ideascale-importer").expect("Ideascale path not correct");
 
     let campaign_group_id = "87";
-    let stage_id = "138";
+    let stage_id = "1";
 
     Command::new("poetry")
         .current_dir(&ideascale_importer_path)
