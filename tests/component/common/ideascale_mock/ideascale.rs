@@ -9,7 +9,7 @@ pub struct IdeascaleSettings {
 ///Load ideascale configuration from file
 pub fn get_configuration() -> Result<IdeascaleSettings, ConfigError> {
     let builder = Config::builder().add_source(File::new(
-        "/home/stefano/work/catalyst-core/tests/component/common/ideascale_configuration",
+        "/home/stefano/work/catalyst-core/tests/component/common/ideascale_mock/ideascale_configuration",
         FileFormat::Yaml,
     ));
     let conf = builder.build();

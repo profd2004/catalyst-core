@@ -8,8 +8,12 @@ Cargo will run all tests from a single binary in parallel, but binaries themselv
 
 To run all tests in this folder:
 `cargo test --test '*'`
-To run component tests:
+Component test:
+To run:
 `cargo test --test component`
+Dependencies:
+Running instance of a db sync
+
 To run end to end tests:
 `cargo test --test end2end`
 To run integration tests:

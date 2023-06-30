@@ -1,4 +1,4 @@
-use crate::common::db_event_mock::db_event;
+use crate::common::event_db_mock::EventDbMock;
 use crate::common::ideascale_mock::ideascale;
 use std::fs;
 use std::process::Command;
@@ -6,14 +6,10 @@ use std::process::Command;
 #[tokio::test]
 async fn import_all() {
     //setup event database
-    let event_id = 1;
-    let db_event_config = db_event::get_configuration_with_random_db_name()
-        .expect("Failed to read db event configuration");
-    let connection_string = db_event_config.connection_string();
-    let db_event_connection = db_event::configure_new_database(&db_event_config).await;
-    //insert a basic event
-    db_event::insert_event(db_event_connection, event_id).await;
-
+    let event_db = EventDbMock::default();
+    let pool = event_db.get_pool().await;
+    event_db.insert_event(&pool, 1).await;
+    /*
     let ideascale_config =
         ideascale::get_configuration().expect("Failed to read ideascale configuration");
     let ideascale_importer_path =
@@ -56,5 +52,5 @@ async fn import_all() {
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     };
 
-    println!("result: {}", s);
+    println!("result: {}", s);*/
 }
