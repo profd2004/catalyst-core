@@ -6,9 +6,11 @@ use std::process::Command;
 #[tokio::test]
 async fn import_all() {
     //setup event database
-    let event_db = EventDbMock::default();
-    let pool = event_db.get_pool().await;
-    event_db.insert_event(&pool, 1).await;
+
+    let event_db = EventDbMock::new(None).await;
+    // let pool = event_db.get_pool().await;
+    event_db.insert_event(1).await;
+    
     /*
     let ideascale_config =
         ideascale::get_configuration().expect("Failed to read ideascale configuration");

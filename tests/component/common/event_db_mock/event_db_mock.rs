@@ -5,7 +5,7 @@ use tokio::runtime::Runtime;
 use uuid::Uuid;
 
 //ToDO fix path, copy migration from eventdb folder, get db and migration folder from env file,
-//put pool into eventdb struct use sqlx::migration add logs, add errors
+//use sqlx::migration add logs, add errors
 
 ///Load event database configuration from file
 pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
@@ -69,14 +69,20 @@ impl DatabaseSettings {
 
 #[derive(Debug)]
 pub struct EventDbMock {
+    pub connection_pool: PgPool,
     pub settings: DatabaseSettings,
 }
 
 impl EventDbMock {
-    pub fn new(database_settings: DatabaseSettings) -> Self {
-        let db_name = database_settings.get_db_name();
-        let server_url = database_settings.connection_string_without_db_name();
-        let db_url = database_settings.connection_string();
+    pub async fn new(db_settings: Option<DatabaseSettings>) -> Self {
+        let settings = match db_settings {
+            None => load_database_configuration_with_random_db_name().unwrap(),
+            Some(settings) => settings,
+        };
+
+        let db_name = settings.get_db_name();
+        let server_url = settings.connection_string_without_db_name();
+        let db_url = settings.connection_string();
 
         thread::spawn(move || {
             let rt = Runtime::new().unwrap();
@@ -95,21 +101,23 @@ impl EventDbMock {
         .join()
         .expect("failed to create database");
 
+        let connection_pool = PgPool::connect(&settings.connection_string())
+            .await
+            .unwrap();
         Self {
-            settings: database_settings,
+            connection_pool,
+            settings,
         }
     }
 
     pub async fn get_pool(&self) -> PgPool {
-        PgPool::connect(&self.settings.connection_string())
-            .await
-            .unwrap()
+        self.connection_pool.clone()
     }
 
     ///Insert new event with event_id and not nullable fields in the event table
-    pub async fn insert_event(&self, db_event_connection: &PgPool, event_id: i32) {
+    pub async fn insert_event(&self, event_id: i32) {
         sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, 'test', 'test_description', 1, 1)"#, event_id)
-        .execute(db_event_connection)
+        .execute(&self.connection_pool)
         .await
         .expect("Failed to insert event id into event database");
     }
@@ -138,6 +146,7 @@ impl Drop for EventDbMock {
     }
 }
 
+/*
 impl Default for EventDbMock {
     fn default() -> Self {
         Self::new(
@@ -145,18 +154,22 @@ impl Default for EventDbMock {
                 .expect("Failed to load configuration"),
         )
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {
-    use crate::common::event_db_mock::EventDbMock;
+    use crate::common::event_db_mock::{
+        event_db_mock::load_database_configuration_with_random_db_name, EventDbMock,
+    };
 
     #[tokio::test]
     async fn create_and_drop_new_db() {
-        let event_db = EventDbMock::default();
-        let pool = event_db.get_pool().await;
-        event_db.insert_event(&pool, 1).await;
+        let settings = load_database_configuration_with_random_db_name().unwrap();
+        let event_db = EventDbMock::new(Some(settings)).await;
+        event_db.insert_event(1).await;
         // get event
+        let pool = event_db.get_pool().await;
+
         let (id, name) = sqlx::query_as::<_, (i32, String)>("SELECT row_id, name FROM event")
             .fetch_one(&pool)
             .await
