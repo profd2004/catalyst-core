@@ -1,16 +1,19 @@
 use config::{Config, ConfigError, File, FileFormat};
+use dotenvy::dotenv;
 use sqlx::{migrate::Migrator, Connection, Executor, PgConnection, PgPool};
-use std::{path::Path, thread};
+use std::{env, path::Path, thread};
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
-//ToDO fix path, copy migration from eventdb folder, get db and migration folder from env file,
+//ToDO fix path, copy migration from eventdb folder,
 //use sqlx::migration add logs, add errors
 
 ///Load event database configuration from file
 pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
+    dotenv().ok();
     let builder = Config::builder().add_source(File::new(
-        "/home/stefano/work/catalyst-core/tests/component/common/event_db_mock/event_db_configuration",
+        &env::var("EVENT_DB_CONFIGURATION_FILE")
+            .expect("Event db configuration file env variable not fund"),
         FileFormat::Yaml,
     ));
     let conf = builder.build();
@@ -22,9 +25,11 @@ pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
 
 ///Load event database configuration from file with a random database name
 pub fn load_database_configuration_with_random_db_name() -> Result<DatabaseSettings, ConfigError> {
+    dotenv().ok();
     let builder = Config::builder()
         .add_source(File::new(
-            "/home/stefano/work/catalyst-core/tests/component/common/event_db_mock/event_db_configuration",
+            &env::var("EVENT_DB_CONFIGURATION_FILE")
+                .expect("Event db configuration file env variable not fund"),
             FileFormat::Yaml,
         ))
         .set_override("database_name", Uuid::new_v4().to_string())
@@ -76,6 +81,7 @@ pub struct EventDbMock {
 impl EventDbMock {
     //Would be better to have a default trait here when async trait will be implemented in rust
     pub async fn new(db_settings: Option<DatabaseSettings>) -> Self {
+        dotenv().ok();
         let settings = match db_settings {
             None => load_database_configuration_with_random_db_name().unwrap(),
             Some(settings) => settings,
@@ -95,7 +101,12 @@ impl EventDbMock {
                     .unwrap();
                 //migrate
                 let mut conn = PgConnection::connect(&db_url).await.unwrap();
-                let migrator = Migrator::new(Path::new("/home/stefano/work/catalyst-core/tests/component/common/event_db_mock/migrations")).await.unwrap();
+                let migrator = Migrator::new(Path::new(
+                    &env::var("EVENT_DB_MIGRATIONS_PATH")
+                        .expect("Event db migrations path env variable not fund"),
+                ))
+                .await
+                .unwrap();
                 migrator.run(&mut conn).await.expect("Migration failed");
             });
         })
@@ -146,16 +157,6 @@ impl Drop for EventDbMock {
             .expect("failed to drop database");
     }
 }
-
-/*
-impl Default for EventDbMock {
-    fn default() -> Self {
-        Self::new(
-            load_database_configuration_with_random_db_name()
-                .expect("Failed to load configuration"),
-        )
-    }
-}*/
 
 #[cfg(test)]
 mod tests {

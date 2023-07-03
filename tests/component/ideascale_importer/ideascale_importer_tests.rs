@@ -1,25 +1,19 @@
 use super::ideascale_importer_command::IdeascaleImporterCommand;
 use crate::common::event_db_mock::EventDbMock;
-use crate::common::ideascale_mock::ideascale;
-use std::fs;
-use std::process::Command;
 
 #[tokio::test]
 async fn import_all() {
     //setup event database
     let event_db = EventDbMock::new(None).await;
-    event_db.insert_event(1).await;
-    let ideascale_config =
-        ideascale::get_configuration().expect("Failed to read ideascale configuration");
+    let event_id = 2;
+    event_db.insert_event(event_id).await;
 
-    let output = IdeascaleImporterCommand::new()
-        .import_all()
-        .api_token(ideascale_config.api_token)
-        .ideascale_api_url(ideascale_config.api_url)
+    let output = IdeascaleImporterCommand::default()
         .event_db_url(event_db.settings.connection_string())
-        .event_id(1)
+        .event_id(event_id)
         .campaign_group_id(87)
-        .stage_id(1).command
+        .stage_id(1)
+        .import_all()
         .output()
         .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
 
@@ -29,42 +23,21 @@ async fn import_all() {
     };
 
     println!("result: {}", s);
+}
 
-    /*
-    let ideascale_config =
-        ideascale::get_configuration().expect("Failed to read ideascale configuration");
-    let ideascale_importer_path =
-        fs::canonicalize("../utilities/ideascale-importer").expect("Ideascale path not correct");
+#[tokio::test]
+async fn import_all_missing_params() {
+    //setup event database
+    let event_db = EventDbMock::new(None).await;
+    let event_id = 2;
+    event_db.insert_event(event_id).await;
 
-    let campaign_group_id = "87";
-    let stage_id = "1";
-
-    Command::new("poetry")
-        .current_dir(&ideascale_importer_path)
-        .arg("install")
-        .output()
-        .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-
-    let output = Command::new("poetry")
-        .current_dir(&ideascale_importer_path)
-        .args([
-            "run",
-            "ideascale-importer",
-            "ideascale",
-            "import-all",
-            "--api-token",
-            &ideascale_config.api_token,
-            "--database-url",
-            &connection_string,
-            "--ideascale-api-url",
-            &ideascale_config.api_url,
-            "--event-id",
-            &event_id.to_string(),
-            "--campaign-group-id",
-            campaign_group_id,
-            "--stage-id",
-            stage_id,
-        ])
+    let output = IdeascaleImporterCommand::default()
+        .event_db_url(event_db.settings.connection_string())
+        .event_id(3)
+        .campaign_group_id(87)
+        .stage_id(1)
+        .import_all()
         .output()
         .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
 
@@ -73,5 +46,5 @@ async fn import_all() {
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     };
 
-    println!("result: {}", s);*/
+    println!("result: {}", s);
 }

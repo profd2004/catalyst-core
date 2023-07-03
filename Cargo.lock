@@ -7420,6 +7420,7 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "config",
+ "dotenvy",
  "refinery",
  "serde",
  "sqlx",
