@@ -74,6 +74,7 @@ pub struct EventDbMock {
 }
 
 impl EventDbMock {
+    //Would be better to have a default trait here when async trait will be implemented in rust
     pub async fn new(db_settings: Option<DatabaseSettings>) -> Self {
         let settings = match db_settings {
             None => load_database_configuration_with_random_db_name().unwrap(),

@@ -1,3 +1,4 @@
+use super::ideascale_importer_command::IdeascaleImporterCommand;
 use crate::common::event_db_mock::EventDbMock;
 use crate::common::ideascale_mock::ideascale;
 use std::fs;
@@ -6,11 +7,29 @@ use std::process::Command;
 #[tokio::test]
 async fn import_all() {
     //setup event database
-
     let event_db = EventDbMock::new(None).await;
-    // let pool = event_db.get_pool().await;
     event_db.insert_event(1).await;
-    
+    let ideascale_config =
+        ideascale::get_configuration().expect("Failed to read ideascale configuration");
+
+    let output = IdeascaleImporterCommand::new()
+        .import_all()
+        .api_token(ideascale_config.api_token)
+        .ideascale_api_url(ideascale_config.api_url)
+        .event_db_url(event_db.settings.connection_string())
+        .event_id(1)
+        .campaign_group_id(87)
+        .stage_id(1).command
+        .output()
+        .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
+
+    let s = match String::from_utf8(output.stdout) {
+        Ok(v) => v,
+        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+    };
+
+    println!("result: {}", s);
+
     /*
     let ideascale_config =
         ideascale::get_configuration().expect("Failed to read ideascale configuration");
