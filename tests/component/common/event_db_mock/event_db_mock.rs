@@ -174,7 +174,7 @@ mod tests {
     #[tokio::test]
     async fn create_and_drop_new_db() {
         let settings = load_database_configuration_with_random_db_name();
-        let event_db = EventDbMock::new(Some(settings)).await;
+        let event_db = EventDbMock::new(settings).await;
         event_db.insert_event(1).await;
         // get event
         let pool = event_db.get_pool().await;
