@@ -69,7 +69,7 @@ pub struct EventDbMock {
 }
 
 impl EventDbMock {
-
+    ///Create and migrate a new event database using database settings
     pub async fn new(settings: DatabaseSettings) -> Self {
         dotenv().ok();
         let db_name = settings.get_db_name();
@@ -110,21 +110,48 @@ impl EventDbMock {
         }
     }
 
-    pub async fn new_with_random_name()->EventDbMock{
+    //This should be changed to implement Default when async trait will be implemented in rust
+    ///Create and migrate a new event database using default settings from configuration file
+    pub async fn new_with_default()->Self{
+        EventDbMock::new(load_database_configuration().expect("Failed to load event database configuration")).await
+    }
+
+    ///Create and migrate a new event database using default settings and random generated database name
+    pub async fn new_with_random_name()->Self{
         EventDbMock::new(load_database_configuration_with_random_db_name()).await
     }
 
+    ///Connect to an existing event database
+    pub async fn connect(settings: DatabaseSettings) -> Self{
+        let connection_pool = PgPool::connect(&settings.connection_string())
+            .await
+            .unwrap();
+        Self {
+            connection_pool,
+            settings,
+            persist: false,
+        }
+    }
+
+    ///Connect to default event database
+    pub async fn connect_to_default() -> Self{
+            EventDbMock::connect(load_database_configuration().expect("Failed to load event database configuration")).await
+    }
+
+    ///Get a pool to the database
     pub async fn get_pool(&self) -> PgPool {
         self.connection_pool.clone()
     }
 
+    ///Persist the database
     pub fn persist(&mut self) {
         self.persist = true;
     }
 
     ///Insert new event with event_id and not nullable fields in the event table
     pub async fn insert_event(&self, event_id: i32) {
-        sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, 'test', 'test_description', 1, 1)"#, event_id)
+        let event_name= format!("event_test_{}",event_id);
+        sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, $2, 'test_description', 1, 1)"#, event_id,event_name)
         .execute(&self.connection_pool)
         .await
         .expect("Failed to insert event id into event database");

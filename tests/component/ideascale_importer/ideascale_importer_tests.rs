@@ -4,10 +4,10 @@ use crate::common::event_db_mock::EventDbMock;
 #[tokio::test]
 async fn import_all_happy_path() {
     //setup event database
-    let event_id = 2;
+    let event_id = 3;
     let campaign_group_id = 87;
-    let stage_id = 1;
-    let mut event_db = EventDbMock::new_with_random_name().await;
+    let stage_id = 2;
+    let mut event_db = EventDbMock::connect_to_default().await;
     event_db.persist();
 
     event_db.insert_event(event_id).await;
