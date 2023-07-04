@@ -7,7 +7,7 @@ async fn import_all_happy_path() {
     let event_id = 2;
     let campaign_group_id = 87;
     let stage_id = 1;
-    let mut event_db = EventDbMock::new(None).await;
+    let mut event_db = EventDbMock::new_with_random_name().await;
     event_db.persist();
 
     event_db.insert_event(event_id).await;
@@ -41,7 +41,7 @@ async fn import_all_happy_path() {
 #[tokio::test]
 async fn import_all_bad_params() {
     //setup event database
-    let event_db = EventDbMock::new(None).await;
+    let event_db = EventDbMock::new_with_random_name().await;
     let event_id = 2;
     let campaign_group_id = 87;
     let stage_id = 1;

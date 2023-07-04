@@ -69,14 +69,9 @@ pub struct EventDbMock {
 }
 
 impl EventDbMock {
-    //Would be better to have a default trait here when async trait will be implemented in rust
-    pub async fn new(db_settings: Option<DatabaseSettings>) -> Self {
-        dotenv().ok();
-        let settings = match db_settings {
-            None => load_database_configuration_with_random_db_name(),
-            Some(settings) => settings,
-        };
 
+    pub async fn new(settings: DatabaseSettings) -> Self {
+        dotenv().ok();
         let db_name = settings.get_db_name();
         let server_url = settings.connection_string_without_db_name();
         let db_url = settings.connection_string();
@@ -113,6 +108,10 @@ impl EventDbMock {
             settings,
             persist: false,
         }
+    }
+
+    pub async fn new_with_random_name()->EventDbMock{
+        EventDbMock::new(load_database_configuration_with_random_db_name()).await
     }
 
     pub async fn get_pool(&self) -> PgPool {
