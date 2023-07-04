@@ -3,7 +3,7 @@ use std::{env, fs, path::PathBuf, process::Command};
 
 use crate::common::ideascale_mock::ideascale;
 use crate::common::ideascale_mock::ideascale::IdeascaleSettings;
-
+#[derive(Clone)]
 pub struct IdeascaleImporterCommand {
     pub path: PathBuf,
     pub ideascale_settings: IdeascaleSettings,
@@ -12,6 +12,7 @@ pub struct IdeascaleImporterCommand {
     pub campaign_group_id: i32,
     pub stage_id: i32,
 }
+
 impl Default for IdeascaleImporterCommand {
     fn default() -> Self {
         dotenv().ok();

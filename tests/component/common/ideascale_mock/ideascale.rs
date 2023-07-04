@@ -1,6 +1,9 @@
-use config::{Config, ConfigError, File, FileFormat};
+use std::env;
 
-#[derive(serde::Deserialize)]
+use config::{Config, ConfigError, File, FileFormat};
+use dotenvy::dotenv;
+
+#[derive(serde::Deserialize, Clone)]
 pub struct IdeascaleSettings {
     pub api_url: String,
     pub api_token: String,
@@ -8,8 +11,10 @@ pub struct IdeascaleSettings {
 
 ///Load ideascale configuration from file
 pub fn get_configuration() -> Result<IdeascaleSettings, ConfigError> {
+    dotenv().ok();
     let builder = Config::builder().add_source(File::new(
-        "/home/stefano/work/catalyst-core/tests/component/common/ideascale_mock/ideascale_configuration",
+        &env::var("IDEASCALE_CONFIGURATION_FILE")
+            .expect("Ideascale configuration file env variable not found"),
         FileFormat::Yaml,
     ));
     let conf = builder.build();

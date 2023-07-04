@@ -94,6 +94,8 @@ impl EventDbMock {
         thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
+                //TODO add logs
+                println!(".....Starting db event {}......",&db_name);
                 //create db
                 let mut conn = PgConnection::connect(&server_url).await.unwrap();
                 conn.execute(format!(r#"CREATE DATABASE "{db_name}""#).as_str())
@@ -133,8 +135,17 @@ impl EventDbMock {
         .await
         .expect("Failed to insert event id into event database");
     }
-}
 
+    ///Get event with event_id from event db database
+    /// TODO return event struct
+    pub async fn get_event(&self, event_id: i32) {
+        sqlx::query!(r#"SELECT * FROM event WHERE row_id = $1"#, event_id)
+            .fetch_one(&self.connection_pool)
+            .await
+            .expect("Failed to get event from event database");
+    }
+}
+/*
 impl Drop for EventDbMock {
     fn drop(&mut self) {
         let server_url = self.settings.connection_string_without_db_name();
@@ -156,7 +167,7 @@ impl Drop for EventDbMock {
             .join()
             .expect("failed to drop database");
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {
