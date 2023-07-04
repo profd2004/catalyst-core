@@ -76,6 +76,7 @@ impl DatabaseSettings {
 pub struct EventDbMock {
     pub connection_pool: PgPool,
     pub settings: DatabaseSettings,
+    pub persist: bool,
 }
 
 impl EventDbMock {
@@ -95,7 +96,7 @@ impl EventDbMock {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
                 //TODO add logs
-                println!(".....Starting db event {}......",&db_name);
+                println!(".....Starting db event {}......", &db_name);
                 //create db
                 let mut conn = PgConnection::connect(&server_url).await.unwrap();
                 conn.execute(format!(r#"CREATE DATABASE "{db_name}""#).as_str())
@@ -121,11 +122,16 @@ impl EventDbMock {
         Self {
             connection_pool,
             settings,
+            persist: false,
         }
     }
 
     pub async fn get_pool(&self) -> PgPool {
         self.connection_pool.clone()
+    }
+
+    pub fn persist(&mut self) {
+        self.persist = true;
     }
 
     ///Insert new event with event_id and not nullable fields in the event table
@@ -145,12 +151,13 @@ impl EventDbMock {
             .expect("Failed to get event from event database");
     }
 }
-/*
+
 impl Drop for EventDbMock {
     fn drop(&mut self) {
-        let server_url = self.settings.connection_string_without_db_name();
-        let db_name = self.settings.get_db_name();
-        thread::spawn(move || {
+        if !self.persist {
+            let server_url = self.settings.connection_string_without_db_name();
+            let db_name = self.settings.get_db_name();
+            thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
                     let mut conn = PgConnection::connect(&server_url).await.unwrap();
@@ -166,8 +173,9 @@ impl Drop for EventDbMock {
             })
             .join()
             .expect("failed to drop database");
+        }
     }
-}*/
+}
 
 #[cfg(test)]
 mod tests {

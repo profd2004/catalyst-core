@@ -7,7 +7,8 @@ async fn import_all_happy_path() {
     let event_id = 2;
     let campaign_group_id = 87;
     let stage_id = 1;
-    let event_db = EventDbMock::new(None).await;
+    let mut event_db = EventDbMock::new(None).await;
+    event_db.persist();
 
     event_db.insert_event(event_id).await;
 
@@ -58,7 +59,7 @@ async fn import_all_bad_params() {
         .import_all()
         .output()
         .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-    
+
     //TODO CHECK DB IS EMPTY
 
     assert!(
