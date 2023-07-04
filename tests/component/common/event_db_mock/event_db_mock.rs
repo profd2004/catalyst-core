@@ -24,21 +24,10 @@ pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
 }
 
 ///Load event database configuration from file with a random database name
-pub fn load_database_configuration_with_random_db_name() -> Result<DatabaseSettings, ConfigError> {
-    dotenv().ok();
-    let builder = Config::builder()
-        .add_source(File::new(
-            &env::var("EVENT_DB_CONFIGURATION_FILE")
-                .expect("Event db configuration file env variable not fund"),
-            FileFormat::Yaml,
-        ))
-        .set_override("database_name", Uuid::new_v4().to_string())
-        .expect("Database name key error");
-    let conf = builder.build();
-    match conf {
-        Ok(conf) => conf.try_deserialize(),
-        Err(e) => Err(e),
-    }
+pub fn load_database_configuration_with_random_db_name() -> DatabaseSettings {
+    let mut db_config=load_database_configuration().expect("Error loading event database configuration");
+    db_config.database_name = Uuid::new_v4().to_string();
+    db_config
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -84,7 +73,7 @@ impl EventDbMock {
     pub async fn new(db_settings: Option<DatabaseSettings>) -> Self {
         dotenv().ok();
         let settings = match db_settings {
-            None => load_database_configuration_with_random_db_name().unwrap(),
+            None => load_database_configuration_with_random_db_name(),
             Some(settings) => settings,
         };
 
@@ -185,12 +174,11 @@ mod tests {
 
     #[tokio::test]
     async fn create_and_drop_new_db() {
-        let settings = load_database_configuration_with_random_db_name().unwrap();
+        let settings = load_database_configuration_with_random_db_name();
         let event_db = EventDbMock::new(Some(settings)).await;
         event_db.insert_event(1).await;
         // get event
         let pool = event_db.get_pool().await;
-
         let (id, name) = sqlx::query_as::<_, (i32, String)>("SELECT row_id, name FROM event")
             .fetch_one(&pool)
             .await
