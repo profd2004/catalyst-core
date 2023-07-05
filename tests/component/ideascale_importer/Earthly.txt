@@ -1,0 +1,4 @@
+TODO in eartly
+Run eventdb database
+poetry install
+copy migrations from event_db igration and rename them

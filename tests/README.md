@@ -12,7 +12,7 @@ Component test:
 To run:
 `cargo test --test component`
 Dependencies:
-Running instance of a db sync
+Ideascale importer tests: a running instance of a db sync
 
 To run end to end tests:
 `cargo test --test end2end`

@@ -1,4 +1,5 @@
 use dotenvy::dotenv;
+use std::ffi::OsStr;
 use std::{env, fs, path::PathBuf, process::Command};
 
 use crate::common::ideascale_mock::ideascale;
@@ -35,13 +36,7 @@ impl Default for IdeascaleImporterCommand {
 }
 
 impl IdeascaleImporterCommand {
-    pub fn new(ideascale_settings: IdeascaleSettings) -> Self {
-        dotenv().ok();
-        let path = fs::canonicalize(
-            env::var("IDEASCALE_IMPORTER_PATH").expect("Ideascale path env variable not found"),
-        )
-        .expect("Ideascale path not correct");
-        let event_db_url = env::var("DATABASE_URL").expect("Event db url env variable not found");
+    pub fn new(ideascale_settings: IdeascaleSettings, event_db_url: String, path: PathBuf) -> Self {
         Self {
             path,
             ideascale_settings,
@@ -104,6 +99,8 @@ impl IdeascaleImporterCommand {
             &self.stage_id.to_string(),
         ]);
 
+        let args: Vec<&OsStr> = command.get_args().collect();
+        println!("Command {:?}", args);
         command
     }
 }
