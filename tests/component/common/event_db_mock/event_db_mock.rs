@@ -27,7 +27,7 @@ pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
 pub fn load_database_configuration_with_random_db_name() -> DatabaseSettings {
     let mut db_config =
         load_database_configuration().expect("Error loading event database configuration");
-    db_config.database_name = Uuid::new_v4().to_string();
+    db_config.name = Uuid::new_v4().to_string();
     db_config
 }
 
@@ -37,7 +37,7 @@ pub struct DatabaseSettings {
     pub password: String,
     pub port: u16,
     pub host: String,
-    pub database_name: String,
+    pub name: String,
 }
 
 impl DatabaseSettings {
@@ -45,7 +45,7 @@ impl DatabaseSettings {
     pub fn connection_string(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database_name
+            self.username, self.password, self.host, self.port, self.name
         )
     }
 
@@ -58,7 +58,7 @@ impl DatabaseSettings {
     }
 
     pub fn get_db_name(&self) -> String {
-        self.database_name.clone()
+        self.name.clone()
     }
 }
 
@@ -74,7 +74,7 @@ impl EventDbMock {
     pub async fn new(settings: DatabaseSettings) -> Self {
         dotenv().ok();
         let db_name = settings.get_db_name();
-        let server_url = settings.connection_string_without_db_name();
+        let host_url = settings.connection_string_without_db_name();
         let db_url = settings.connection_string();
 
         thread::spawn(move || {
@@ -83,7 +83,7 @@ impl EventDbMock {
                 //TODO add logs
                 println!(".....Starting db event {}......", &db_name);
                 //create db
-                let mut conn = PgConnection::connect(&server_url).await.unwrap();
+                let mut conn = PgConnection::connect(&host_url).await.unwrap();
                 conn.execute(format!(r#"CREATE DATABASE "{db_name}""#).as_str())
                     .await
                     .unwrap();
@@ -177,12 +177,12 @@ impl EventDbMock {
 impl Drop for EventDbMock {
     fn drop(&mut self) {
         if !self.persist {
-            let server_url = self.settings.connection_string_without_db_name();
+            let host_url = self.settings.connection_string_without_db_name();
             let db_name = self.settings.get_db_name();
             thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
-                    let mut conn = PgConnection::connect(&server_url).await.unwrap();
+                    let mut conn = PgConnection::connect(&host_url).await.unwrap();
                     //terminate existing connections
                     sqlx::query(&format!(r#"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '{db_name}'"#))
                     .execute( &mut conn)
