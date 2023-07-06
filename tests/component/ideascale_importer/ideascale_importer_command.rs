@@ -14,6 +14,7 @@ pub struct IdeascaleImporterCommand {
     pub stage_id: i32,
 }
 
+//TODO add default db and importer path
 impl Default for IdeascaleImporterCommand {
     fn default() -> Self {
         dotenv().ok();
@@ -98,9 +99,6 @@ impl IdeascaleImporterCommand {
             "--stage-id",
             &self.stage_id.to_string(),
         ]);
-
-        let args: Vec<&OsStr> = command.get_args().collect();
-        println!("Command {:?}", args);
         command
     }
 }

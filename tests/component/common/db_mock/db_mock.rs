@@ -98,9 +98,13 @@ impl DbMock {
                 //migrate
                 println!(".....Migrating database {}......", &db_name);
                 let mut conn = PgConnection::connect(&db_url).await.unwrap();
-                let migrator = Migrator::new(fs::canonicalize(Path::new(
-                    &env::var("DB_MIGRATIONS_PATH").unwrap_or("/home/stefano/work/catalyst-core/tests/component/common/db_mock/migrations".to_string()),
-                )).expect("Failed to canonicalize db migrations path"))
+                let migrator = Migrator::new(
+                    fs::canonicalize(Path::new(
+                        &env::var("DB_MIGRATIONS_PATH")
+                            .unwrap_or("/home/stefano/work/catalyst-core/migrations".to_string()),
+                    ))
+                    .expect("Failed to canonicalize db migrations path"),
+                )
                 .await
                 .unwrap();
                 migrator.run(&mut conn).await.expect("Migration failed");
@@ -191,7 +195,8 @@ impl Drop for DbMock {
 #[cfg(test)]
 mod tests {
     use crate::common::db_mock::{
-        db_mock::{load_database_configuration_with_random_db_name, load_database_configuration}, DbMock,
+        db_mock::{load_database_configuration, load_database_configuration_with_random_db_name},
+        DbMock,
     };
 
     #[tokio::test]
