@@ -1,5 +1,7 @@
 use super::ideascale_importer_command::IdeascaleImporterCommand;
+use crate::common::dbsync_mock::DbSyncMock;
 use crate::common::event_db_mock::EventDbMock;
+
 static FUND10_SANDBOX_ID: i32 = 87;
 static SUBMIT_PROPOSALS_STAGE_ID: i32 = 1;
 static FINALIZE_STAGE_ID: i32 = 2;
@@ -191,8 +193,8 @@ async fn import_all_same_event_id() {
 
 #[tokio::test]
 async fn import_snapshot_happy_path() {
-    let event_id=1;
+    let event_id = 1;
     let event_db = EventDbMock::new_with_random_name().await;
     event_db.insert_event(event_id).await;
-
+    DbSyncMock::new().await;
 }

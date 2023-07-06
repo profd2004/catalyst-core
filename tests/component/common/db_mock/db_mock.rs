@@ -1,19 +1,22 @@
+///Generic mock database struct
 use config::{Config, ConfigError, File, FileFormat};
 use dotenvy::dotenv;
 use sqlx::{migrate::Migrator, Connection, Executor, PgConnection, PgPool};
-use std::{env, path::Path, thread};
+use std::{env, fs, path::Path, thread};
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
-//ToDO fix path, copy migration from eventdb folder,
+//ToDO fix path,
 //use sqlx::migration add logs, add errors
 
-///Load event database configuration from file
+///Load database configuration from file
 pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
     dotenv().ok();
     let builder = Config::builder().add_source(File::new(
-        &env::var("EVENT_DB_CONFIGURATION_FILE")
-            .expect("Event db configuration file env variable not fund"),
+        &env::var("CONFIGURATION_FILE").unwrap_or(
+            "/home/stefano/work/catalyst-core/tests/component/common/db_mock/db_configuration"
+                .to_string(),
+        ),
         FileFormat::Yaml,
     ));
     let conf = builder.build();
@@ -23,11 +26,15 @@ pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
     }
 }
 
-///Load event database configuration from file with a random database name
-pub fn load_database_configuration_with_random_db_name() -> DatabaseSettings {
+///Load database configuration from file with a random database name
+pub fn load_database_configuration_with_random_db_name(prefix: Option<String>) -> DatabaseSettings {
     let mut db_config =
-        load_database_configuration().expect("Error loading event database configuration");
+        load_database_configuration().expect("Error loading database configuration");
     db_config.name = Uuid::new_v4().to_string();
+    if let Some(prefix) = prefix {
+        db_config.name = prefix
+    }
+    db_config.name += &Uuid::new_v4().to_string();
     db_config
 }
 
@@ -63,14 +70,15 @@ impl DatabaseSettings {
 }
 
 #[derive(Debug)]
-pub struct EventDbMock {
+pub struct DbMock {
     pub connection_pool: PgPool,
     pub settings: DatabaseSettings,
     pub persist: bool,
 }
 
-impl EventDbMock {
-    ///Create and migrate a new event database using database settings
+impl DbMock {
+    ///Create and migrate a new database using database settings
+    ///and DB_MIGRATIONS_PATH env variable or ./migrations folder
     pub async fn new(settings: DatabaseSettings) -> Self {
         dotenv().ok();
         let db_name = settings.get_db_name();
@@ -80,19 +88,19 @@ impl EventDbMock {
         thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
-                //TODO add logs
-                println!(".....Starting db event {}......", &db_name);
+                //TODO remove println add logs
                 //create db
+                println!(".....Starting database {}......", &db_name);
                 let mut conn = PgConnection::connect(&host_url).await.unwrap();
                 conn.execute(format!(r#"CREATE DATABASE "{db_name}""#).as_str())
                     .await
                     .unwrap();
                 //migrate
+                println!(".....Migrating database {}......", &db_name);
                 let mut conn = PgConnection::connect(&db_url).await.unwrap();
-                let migrator = Migrator::new(Path::new(
-                    &env::var("EVENT_DB_MIGRATIONS_PATH")
-                        .expect("Event db migrations path env variable not fund"),
-                ))
+                let migrator = Migrator::new(fs::canonicalize(Path::new(
+                    &env::var("DB_MIGRATIONS_PATH").unwrap_or("/home/stefano/work/catalyst-core/tests/component/common/db_mock/migrations".to_string()),
+                )).expect("Failed to canonicalize db migrations path"))
                 .await
                 .unwrap();
                 migrator.run(&mut conn).await.expect("Migration failed");
@@ -114,18 +122,16 @@ impl EventDbMock {
     //This should be changed to implement Default when async trait will be implemented in rust
     ///Create and migrate a new event database using default settings from configuration file
     pub async fn new_with_default() -> Self {
-        EventDbMock::new(
-            load_database_configuration().expect("Failed to load event database configuration"),
-        )
-        .await
+        DbMock::new(load_database_configuration().expect("Failed to load database configuration"))
+            .await
     }
 
-    ///Create and migrate a new event database using default settings and random generated database name
-    pub async fn new_with_random_name() -> Self {
-        EventDbMock::new(load_database_configuration_with_random_db_name()).await
+    ///Create and migrate a new database using default settings and random generated database name
+    pub async fn new_with_random_name(prefix: Option<String>) -> Self {
+        DbMock::new(load_database_configuration_with_random_db_name(prefix)).await
     }
 
-    ///Connect to an existing event database
+    ///Connect to an existing database
     pub async fn connect(settings: DatabaseSettings) -> Self {
         let connection_pool = PgPool::connect(&settings.connection_string())
             .await
@@ -137,9 +143,9 @@ impl EventDbMock {
         }
     }
 
-    ///Connect to default event database
+    ///Connect to default database
     pub async fn connect_to_default() -> Self {
-        EventDbMock::connect(
+        DbMock::connect(
             load_database_configuration().expect("Failed to load event database configuration"),
         )
         .await
@@ -154,27 +160,9 @@ impl EventDbMock {
     pub fn persist(&mut self) {
         self.persist = true;
     }
-
-    ///Insert new event with event_id and not nullable fields in the event table
-    pub async fn insert_event(&self, event_id: i32) {
-        let event_name = format!("event_test_{}", event_id);
-        sqlx::query!(r#"INSERT INTO event (row_id, name, description, committee_size, committee_threshold) VALUES($1, $2, 'test_description', 1, 1)"#, event_id,event_name)
-        .execute(&self.connection_pool)
-        .await
-        .expect("Failed to insert event id into event database");
-    }
-
-    ///Get event with event_id from event db database
-    /// TODO return event struct
-    pub async fn get_event(&self, event_id: i32) {
-        sqlx::query!(r#"SELECT * FROM event WHERE row_id = $1"#, event_id)
-            .fetch_one(&self.connection_pool)
-            .await
-            .expect("Failed to get event from event database");
-    }
 }
 
-impl Drop for EventDbMock {
+impl Drop for DbMock {
     fn drop(&mut self) {
         if !self.persist {
             let host_url = self.settings.connection_string_without_db_name();
@@ -184,6 +172,7 @@ impl Drop for EventDbMock {
             rt.block_on(async move {
                     let mut conn = PgConnection::connect(&host_url).await.unwrap();
                     //terminate existing connections
+                    println!(".....Dropping database {}......", &db_name);
                     sqlx::query(&format!(r#"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '{db_name}'"#))
                     .execute( &mut conn)
                     .await
@@ -201,22 +190,13 @@ impl Drop for EventDbMock {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::event_db_mock::{
-        event_db_mock::load_database_configuration_with_random_db_name, EventDbMock,
+    use crate::common::db_mock::{
+        db_mock::{load_database_configuration_with_random_db_name, load_database_configuration}, DbMock,
     };
 
     #[tokio::test]
     async fn create_and_drop_new_db() {
-        let settings = load_database_configuration_with_random_db_name();
-        let event_db = EventDbMock::new(settings).await;
-        event_db.insert_event(1).await;
-        // get event
-        let pool = event_db.get_pool().await;
-        let (id, name) = sqlx::query_as::<_, (i32, String)>("SELECT row_id, name FROM event")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-        assert_eq!(id, 1);
-        assert_eq!(name, "event_test_1");
+        let settings = load_database_configuration().unwrap();
+        let mut db_mock = DbMock::new(settings).await;
     }
 }
