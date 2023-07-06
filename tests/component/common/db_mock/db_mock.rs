@@ -14,7 +14,7 @@ pub fn load_database_configuration() -> Result<DatabaseSettings, ConfigError> {
     dotenv().ok();
     let builder = Config::builder().add_source(File::new(
         &env::var("CONFIGURATION_FILE").unwrap_or(
-            "/home/stefano/work/catalyst-core/tests/component/common/db_mock/db_configuration"
+            "component/common/db_mock/db_configuration"
                 .to_string(),
         ),
         FileFormat::Yaml,
@@ -97,11 +97,12 @@ impl DbMock {
                     .unwrap();
                 //migrate
                 println!(".....Migrating database {}......", &db_name);
+                println!("current dir {}",env::current_dir().unwrap().display());
                 let mut conn = PgConnection::connect(&db_url).await.unwrap();
                 let migrator = Migrator::new(
                     fs::canonicalize(Path::new(
                         &env::var("DB_MIGRATIONS_PATH")
-                            .unwrap_or("/home/stefano/work/catalyst-core/migrations".to_string()),
+                            .unwrap_or("component/common/db_mock/migrations".to_string()),
                     ))
                     .expect("Failed to canonicalize db migrations path"),
                 )
@@ -147,7 +148,7 @@ impl DbMock {
         }
     }
 
-    ///Connect to default database
+    ///Connect to the default database
     pub async fn connect_to_default() -> Self {
         DbMock::connect(
             load_database_configuration().expect("Failed to load event database configuration"),
@@ -201,7 +202,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_and_drop_new_db() {
-        let settings = load_database_configuration().unwrap();
-        let mut db_mock = DbMock::new(settings).await;
+        let settings = load_database_configuration_with_random_db_name(None);
+        let db_mock = DbMock::new(settings).await;
     }
 }
