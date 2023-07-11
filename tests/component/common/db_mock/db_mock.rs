@@ -1,18 +1,13 @@
-///Generic mock database struct
-use config::{Config, ConfigError, File, FileFormat};
 use sqlx::{migrate::Migrator, Connection, Executor, PgConnection, PgPool};
-use std::{
-    env,
-    path::{Path, PathBuf},
-    thread,
-};
+///Generic mock database struct
+use std::path::Path;
+use std::thread;
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
-//ToDO fix comments
-//use sqlx::migration add logs, add errors
+//ToDO fix comments add logs, add errors
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: String,
@@ -59,9 +54,9 @@ impl DatabaseSettings {
 
 #[derive(Debug)]
 pub struct DbMock {
-    pub connection_pool: PgPool,
-    pub settings: DatabaseSettings,
-    pub persist: bool,
+    connection_pool: PgPool,
+    settings: DatabaseSettings,
+    persist: bool,
 }
 
 impl DbMock {
@@ -76,9 +71,8 @@ impl DbMock {
         thread::spawn(move || {
             let rt = Runtime::new().unwrap();
             rt.block_on(async move {
-                //TODO remove println add logs
                 //create db
-                println!("INFO Starting database {}\n", &db_name);
+                println!("INFO: Starting database {}\n", &db_name);
                 let mut conn = PgConnection::connect(&host_url)
                     .await
                     .expect(&format!("Connection to {} failed", &host_url));
@@ -93,9 +87,7 @@ impl DbMock {
                 let mut conn = PgConnection::connect(&db_url)
                     .await
                     .expect("Database connection failed");
-                let migrator = Migrator::new(Path::new(&migrations))
-                    .await
-                    .unwrap();
+                let migrator = Migrator::new(Path::new(&migrations)).await.unwrap();
                 migrator.run(&mut conn).await.expect("Migration failed");
             });
         })
@@ -113,14 +105,15 @@ impl DbMock {
         }
     }
 
-    pub async fn new_with_default(){
-        DbMock::new(DatabaseSettings::default()).await;
-    }
-
     ///Create and migrate a new database using default settings and random generated database name
-    pub async fn new_with_random_name(mut settings: DatabaseSettings, prefix: Option<String>) -> Self {
+    pub async fn new_with_random_name(
+        mut settings: DatabaseSettings,
+        prefix: Option<String>,
+    ) -> Self {
         let mut name = Uuid::new_v4().to_string();
-        if let Some(prefix)= prefix { name = prefix + &name};
+        if let Some(prefix) = prefix {
+            name = prefix + &name
+        };
         settings.name = name;
         DbMock::new(settings).await
     }
@@ -142,6 +135,10 @@ impl DbMock {
         self.connection_pool.clone()
     }
 
+    pub fn get_settings(&self) -> DatabaseSettings {
+        self.settings.clone()
+    }
+
     ///Persist the database
     pub fn persist(&mut self) {
         self.persist = true;
@@ -158,7 +155,7 @@ impl Drop for DbMock {
             rt.block_on(async move {
                     let mut conn = PgConnection::connect(&host_url).await.unwrap();
                     //terminate existing connections
-                    println!("INFO Dropping database {}\n", &db_name);
+                    println!("INFO: Dropping database {}\n", &db_name);
                     sqlx::query(&format!(r#"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '{db_name}'"#))
                     .execute( &mut conn)
                     .await
@@ -179,7 +176,7 @@ mod tests {
     use crate::common::db_mock::{DatabaseSettings, DbMock};
 
     #[tokio::test]
-    async fn create_and_drop_new_db() {
+    async fn create_migrate_drop_new_db() {
         let _db_mock = DbMock::new(DatabaseSettings::default()).await;
     }
 }

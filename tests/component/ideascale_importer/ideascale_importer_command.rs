@@ -1,5 +1,4 @@
 use dotenvy::dotenv;
-use std::ffi::OsStr;
 use std::{env, fs, path::PathBuf, process::Command};
 
 use crate::common::ideascale_mock::ideascale;

@@ -27,8 +27,8 @@ async fn import_all_proposals_stage_flow() {
     //setup event database
     let event_db = EventDbMock::new_with_random_name().await;
     event_db.insert_event(EVENT_ID).await;
-    let base_command =
-        IdeascaleImporterCommand::default().event_db_url(event_db.settings.connection_string());
+    let base_command = IdeascaleImporterCommand::default()
+        .event_db_url(event_db.get_settings().connection_string());
     //Import proposals one stage at the time, and move some proposal to the next stage
     for stage_id in FUND10_STAGES {
         let mut command = base_command
@@ -73,8 +73,8 @@ async fn import_all_bad_params() {
         (EVENT_ID, BAD_PROPOSAL_GROUP_ID, FINALIZE_STAGE_ID),
     ];
 
-    let base_command =
-        IdeascaleImporterCommand::default().event_db_url(event_db.settings.connection_string());
+    let base_command = IdeascaleImporterCommand::default()
+        .event_db_url(event_db.get_settings().connection_string());
 
     for (event_id, proposal_group_id, stage_id) in test_vec {
         let mut command = base_command
@@ -118,5 +118,5 @@ async fn import_snapshot_happy_path() {
     let event_id = 1;
     let event_db = EventDbMock::new_with_random_name().await;
     event_db.insert_event(event_id).await;
-    DbSyncMock::new().await;
+    let _dbsync = DbSyncMock::new_with_random_name().await;
 }
