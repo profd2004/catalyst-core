@@ -103,9 +103,9 @@ async fn import_all_bad_params() {
     }
 }
 
+//TODO
 ///Import proposals, then edit one and che the pool picks it up
 #[tokio::test]
-//TODO
 async fn import_all_edit_proposal() {
     //setup event database
     let event_id = 1;

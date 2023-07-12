@@ -101,3 +101,68 @@ impl IdeascaleImporterCommand {
         command
     }
 }
+
+#[derive(Clone)]
+pub struct IdeascaleImporterSnapshotCommand {
+    pub path: PathBuf,
+    pub event_db_url: String,
+    pub event_id: i32,
+}
+
+//TODO add default db and importer path
+impl Default for IdeascaleImporterSnapshotCommand {
+    fn default() -> Self {
+        dotenv().ok();
+        let path = fs::canonicalize(
+            env::var("IDEASCALE_IMPORTER_PATH").expect("Ideascale path env variable not found"),
+        )
+        .expect("Ideascale path not correct");
+        let event_db_url = env::var("DATABASE_URL").expect("Event db url env variable not found");
+        Self {
+            path,
+            event_db_url,
+            event_id: 1,
+        }
+    }
+}
+
+impl IdeascaleImporterSnapshotCommand {
+    pub fn new(event_db_url: String, path: PathBuf) -> Self {
+        Self {
+            path,
+            event_db_url,
+            event_id: 1,
+        }
+    }
+
+    pub fn event_db_url(mut self, event_db_url: String) -> Self {
+        self.event_db_url = event_db_url;
+        self
+    }
+
+    pub fn event_id(mut self, event_id: i32) -> Self {
+        self.event_id = event_id;
+        self
+    }
+
+    pub fn path(mut self, path: PathBuf) -> Self {
+        self.path = path;
+        self
+    }
+
+    pub fn snapshot_import(self) -> Command {
+        let mut command = Command::new("poetry");
+        command.current_dir(self.path);
+        command.args([
+            "run",
+            "ideascale-importer",
+            "snapshot",
+            "import",
+            "--eventdb-url",
+            &self.event_db_url,
+            "--event-id",
+            &self.event_id.to_string(),
+        ]);
+        command
+    }
+}
