@@ -107,6 +107,9 @@ pub struct IdeascaleImporterSnapshotCommand {
     pub path: PathBuf,
     pub event_db_url: String,
     pub event_id: i32,
+    pub catalyst_toolbox_path: Option<PathBuf>,
+    pub raw_snapshot_file: Option<PathBuf>,
+    pub dreps_file: Option<PathBuf>,
 }
 
 //TODO add default db and importer path
@@ -122,6 +125,9 @@ impl Default for IdeascaleImporterSnapshotCommand {
             path,
             event_db_url,
             event_id: 1,
+            catalyst_toolbox_path: None,
+            raw_snapshot_file: None,
+            dreps_file: None,
         }
     }
 }
@@ -132,6 +138,9 @@ impl IdeascaleImporterSnapshotCommand {
             path,
             event_db_url,
             event_id: 1,
+            catalyst_toolbox_path: None,
+            raw_snapshot_file: None,
+            dreps_file: None,
         }
     }
 
@@ -150,6 +159,21 @@ impl IdeascaleImporterSnapshotCommand {
         self
     }
 
+    pub fn catalyst_toolbox_path(mut self, catalyst_toolbox_path: PathBuf) -> Self {
+        self.catalyst_toolbox_path = Some(catalyst_toolbox_path);
+        self
+    }
+
+    pub fn raw_snapshot_file(mut self, raw_snapshot_file: PathBuf) -> Self {
+        self.raw_snapshot_file = Some(raw_snapshot_file);
+        self
+    }
+
+    pub fn dreps_file(mut self, dreps_file: PathBuf) -> Self {
+        self.dreps_file = Some(dreps_file);
+        self
+    }
+
     pub fn snapshot_import(self) -> Command {
         let mut command = Command::new("poetry");
         command.current_dir(self.path);
@@ -163,6 +187,23 @@ impl IdeascaleImporterSnapshotCommand {
             "--event-id",
             &self.event_id.to_string(),
         ]);
+        if self.catalyst_toolbox_path.is_some() {
+            command.args([
+                "--catalyst-toolbox-path",
+                self.catalyst_toolbox_path.unwrap().to_str().unwrap(),
+            ]);
+        }
+        if self.dreps_file.is_some() {
+            command.args(["--dreps-file", self.dreps_file.unwrap().to_str().unwrap()]);
+        }
+
+        if self.raw_snapshot_file.is_some() {
+            command.args([
+                "--raw-snapshot-file",
+                self.raw_snapshot_file.unwrap().to_str().unwrap(),
+            ]);
+        }
+
         command
     }
 }
