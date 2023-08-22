@@ -1,8 +1,7 @@
 pub use fraction::Fraction;
 use jormungandr_lib::{crypto::account::Identifier, interfaces::Value};
 use registration::{
-    serde_impl::IdentifierDef, Delegations, MainnetRewardAddress, MainnetStakeAddress,
-    VotingRegistration,
+    serde_impl::IdentifierDef, Delegations, RewardAddress, StakeAddress, VotingRegistration,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -79,8 +78,8 @@ pub enum Error {
 /// Contribution to a voting key for some registration
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyContribution {
-    pub stake_public_key: MainnetStakeAddress,
-    pub reward_address: MainnetRewardAddress,
+    pub stake_public_key: StakeAddress,
+    pub reward_address: RewardAddress,
     pub value: u64,
 }
 
@@ -364,9 +363,9 @@ pub mod tests {
                 (voting_pub_key_2.clone(), 1),
             ]);
             raw_snapshot.push(VotingRegistration {
-                stake_public_key: String::new(),
+                stake_public_key: StakeAddress(String::new()),
                 voting_power: i.into(),
-                reward_address: String::new(),
+                reward_address: RewardAddress(String::new()),
                 delegations,
                 voting_purpose: 0,
                 nonce: 0,

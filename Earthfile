@@ -3,7 +3,7 @@ VERSION 0.7
 FROM debian:stable-slim
 
 rust-toolchain:
-    FROM rust:1.65-slim-bullseye
+    FROM rust:1.71.0-slim-bullseye
 
 # Installs Cargo chef
 install-chef:
@@ -74,7 +74,6 @@ all:
 
     # Build and tag all Docker images
     BUILD ./containers/event-db-migrations+docker --tag=$tag --registry=$registry_final
-    BUILD ./containers/event-db-graphql+docker --tag=$tag --registry=$registry_final
 
     # Build crate images from the workspace
     BUILD ./src/jormungandr/jormungandr+docker --tag=$tag --registry=$registry_final
@@ -128,10 +127,8 @@ tag-workspace:
 local:
     LOCALLY
     BUILD ./containers/event-db-migrations+docker
-    BUILD ./containers/event-db-graphql+docker
     BUILD ./src/cat-data-service+docker
     BUILD ./services/voting-node+docker
 
     RUN mkdir -p ./local
     COPY ./containers/dev-local+build/docker-compose.yml ./local/
-    COPY ./utilities/ideascale-importer+build/src/ideascale-importer-config.json ./local/

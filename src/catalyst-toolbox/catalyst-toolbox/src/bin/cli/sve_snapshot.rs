@@ -64,7 +64,8 @@ impl SveSnapshotCmd {
         }
 
         // Filter CIP-36 registrations with more than 1 delegation.
-        let registrations: Vec<VotingRegistration> = serde_json::from_value(registratons)?;
+        let registrations = serde_json::from_value::<Vec<VotingRegistration>>(registratons)?;
+
         let raw_snapshot = RawSnapshot::from(registrations);
         let (snapshot, total_registrations_rejected) =
             snapshot_lib::sve::Snapshot::new(raw_snapshot, self.min_stake_threshold);

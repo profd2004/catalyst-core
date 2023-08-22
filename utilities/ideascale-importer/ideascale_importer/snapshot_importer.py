@@ -367,6 +367,7 @@ class Importer:
             dreps = await gvc_client.dreps()
         except Exception as e:
             logger.error("Failed to get dreps, using drep cache", error=str(e))
+        await gvc_client.close()
 
         self.dreps_json = json.dumps([dataclasses.asdict(d) for d in dreps])
 
@@ -653,7 +654,7 @@ class Importer:
 
             logger.info(
                 "Done processing contributions and voters",
-                total_registered_voting_power=total_registered_voting_power[network_id],
+                total_registered_voting_power=total_registered_voting_power.get(network_id, 0),
                 total_contributed_voting_power=total_contributed_voting_power,
                 total_hir_voting_power=total_hir_voting_power,
                 network_id=network_id,
