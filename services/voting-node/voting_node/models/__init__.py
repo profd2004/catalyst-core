@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Optional, Self
 
 import yaml
 from aiofile import async_open
@@ -69,6 +69,9 @@ class ServiceSettings:
     # has changed.
     reloadable: bool = False
     """Enable resetting and reloading the node service during runtime."""
+    role: Optional[str] = None
+    """Specify which role the voting node should assume (e.g. leader0).
+    If not specified, the role will be defined by the node's hostname."""
 
 
 @dataclass
@@ -144,6 +147,7 @@ class LeaderHostInfo:
 
     hostname: str
     consensus_leader_id: str
+    role: Optional[str]
 
 
 @dataclass
@@ -385,6 +389,24 @@ class Voter:
     voting_group: str
     # The voting power associated with this key
     voting_power: int
+
+@dataclass
+class Objective:
+    row_id: int
+    id: int
+    event: int
+    category: str
+    title: str
+    description: str
+    deleted: bool
+    rewards_currency: str | None = None
+    rewards_total: int | None = None
+    rewards_total_lovelace: int | None = None
+    proposers_rewards: int | None = None
+    vote_options: int | None = None
+
+    extra: Mapping[str, Any] | None = None
+
 
 @dataclass
 class Objective:
