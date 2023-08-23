@@ -9,6 +9,8 @@ from typing import Final, Mapping, NoReturn
 
 from loguru import logger
 
+from voting_node.models.token import TokenId
+
 from . import utils
 from .db import EventDb
 from .envvar import COMMITTEE_CRS
@@ -27,7 +29,7 @@ from .models import (
     Proposal,
     ServiceSettings,
     Voter,
-    VotingGroup,
+    VotingGroupToken,
     YamlType,
 )
 from .node import (
@@ -485,14 +487,15 @@ class Leader0Schedule(LeaderSchedule):
         if not is_final:
             logger.warning("snapshot is not final")
 
-        async def collect_voting_groups() -> list[VotingGroup]:
-            groups = []
+        async def collect_voting_group_tokens() -> list[VotingGroupToken]:
+            group_tokens = []
             try:
                 groups = await self.db.fetch_voting_groups()
+                group_tokens = [VotingGroupToken(group=g, token=TokenId()) for g in groups]
             except Exception:
                 logger.exception("failed to collect voting groups")
             finally:
-                return groups
+                return group_tokens
 
         async def collect_voter_registrations() -> list[Voter]:
             """Collect voter registration information."""
@@ -534,7 +537,7 @@ class Leader0Schedule(LeaderSchedule):
             return objective_proposals
 
         # Collect registration information needed for block0
-        await collect_voting_groups()
+        await collect_voting_group_tokens()
         await collect_voter_registrations()
         await collect_contributions()
 

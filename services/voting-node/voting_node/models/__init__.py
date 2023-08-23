@@ -8,6 +8,8 @@ from typing import Any, Optional, Self
 import yaml
 from aiofile import async_open
 
+from .token import TokenId
+
 
 ### Base types
 @dataclass
@@ -374,6 +376,14 @@ class FundsForToken:
 class VotingGroup:
     name: str
     """The ID of this voting group."""
+
+
+@dataclass
+class VotingGroupToken:
+    """Voting group token."""
+
+    group: VotingGroup
+    token: TokenId
 
 
 @dataclass
