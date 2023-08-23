@@ -1,6 +1,6 @@
 use super::LimitOffset;
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::SerdeType,
 };
@@ -27,7 +27,7 @@ pub fn event(state: Arc<State>) -> Router {
                     "/",
                     get({
                         let state = state.clone();
-                        move |path| async { handle_result(event_exec(path, state).await) }
+                        move |path| async { axum_handle_result(event_exec(path, state).await) }
                     }),
                 )
                 .merge(objective)
@@ -35,7 +35,7 @@ pub fn event(state: Arc<State>) -> Router {
         )
         .route(
             "/events",
-            get(move |query| async { handle_result(events_exec(query, state).await) }),
+            get(move |query| async { axum_handle_result(events_exec(query, state).await) }),
         )
 }
 
@@ -87,7 +87,7 @@ async fn events_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -97,7 +97,7 @@ mod tests {
     #[tokio::test]
     async fn event_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!("/api/v1/event/{0}", 1))
@@ -168,7 +168,7 @@ mod tests {
     #[tokio::test]
     async fn events_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri("/api/v1/events".to_string())

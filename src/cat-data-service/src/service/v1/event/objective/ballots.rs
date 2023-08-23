@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::SerdeType,
 };
@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub fn ballots(state: Arc<State>) -> Router {
     Router::new().route(
         "/ballots",
-        get(move |path| async { handle_result(ballots_exec(path, state).await) }),
+        get(move |path| async { axum_handle_result(ballots_exec(path, state).await) }),
     )
 }
 
@@ -55,7 +55,7 @@ async fn ballots_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -65,7 +65,7 @@ mod tests {
     #[tokio::test]
     async fn ballots_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!("/api/v1/event/{0}/objective/{1}/ballots", 1, 1))

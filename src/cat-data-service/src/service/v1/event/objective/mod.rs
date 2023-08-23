@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, v1::LimitOffset, Error},
+    service::{axum_handle_result, v1::LimitOffset, Error},
     state::State,
     types::SerdeType,
 };
@@ -28,13 +28,13 @@ pub fn objective(state: Arc<State>) -> Router {
         .route("/objectives", {
             let state = state.clone();
             get(move |path, query| async {
-                handle_result(objectives_exec(path, query, state).await)
+                axum_handle_result(objectives_exec(path, query, state).await)
             })
         })
         .route(
             "/objectives/voting_status",
             get(move |path, query| async {
-                handle_result(objectives_voting_statuses_exec(path, query, state).await)
+                axum_handle_result(objectives_voting_statuses_exec(path, query, state).await)
             }),
         )
 }
@@ -143,7 +143,7 @@ async fn objectives_voting_statuses_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -153,7 +153,7 @@ mod tests {
     #[tokio::test]
     async fn objectives_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!("/api/v1/event/{0}/objectives", 1))
@@ -295,7 +295,7 @@ mod tests {
     #[tokio::test]
     async fn objectives_voting_status_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let data = mocked_voting_status_data();
         let request = Request::builder()

@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::jorm_mock::{AccountId, AccountVote, Fragments, FragmentsProcessingSummary},
 };
@@ -14,11 +14,11 @@ pub fn jorm_mock(state: Arc<State>) -> Router {
     Router::new()
         .route("/fragments", {
             let state = state.clone();
-            post(move |body| async { handle_result(fragments_exec(body, state).await) })
+            post(move |body| async { axum_handle_result(fragments_exec(body, state).await) })
         })
         .route(
             "/votes/plan/account-votes/:account_id",
-            get(move |path| async { handle_result(account_votes_exec(path, state).await) }),
+            get(move |path| async { axum_handle_result(account_votes_exec(path, state).await) }),
         )
 }
 
@@ -61,7 +61,7 @@ async fn account_votes_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{header, Method, Request, StatusCode},
@@ -71,7 +71,7 @@ mod tests {
     #[tokio::test]
     async fn fragments_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .method(Method::POST)
@@ -100,7 +100,7 @@ mod tests {
     #[tokio::test]
     async fn account_votes_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .method(Method::GET)

@@ -1,20 +1,22 @@
 use crate::state::State;
-use axum::{
-    extract::MatchedPath,
-    http::{Method, Request, StatusCode},
-    middleware::{self, Next},
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
+use poem::{http::Method, listener::TcpListener, middleware::Cors, Endpoint, EndpointExt, Route};
+use poem_openapi::{
+    types::{ToJSON, Type},
+    ApiResponse, Object, OpenApiService,
+};
 use serde::Serialize;
 use std::{future::ready, net::SocketAddr, sync::Arc, time::Instant};
-use tower_http::cors::{Any, CorsLayer};
 
+#[allow(dead_code)]
 mod health;
+#[allow(dead_code)]
 mod v0;
+#[allow(dead_code)]
 mod v1;
+
+const API_NAME: &str = "Catalyst 1.0";
+const API_VERSION: &str = "1.0.0";
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -24,37 +26,81 @@ pub enum Error {
     EventDbError(#[from] event_db::error::Error),
 }
 
-#[derive(Serialize, Debug)]
-pub struct ErrorMessage {
+#[derive(Serialize, Debug, Object)]
+struct ErrorMessage {
     error: String,
 }
 
-pub fn app(state: Arc<State>) -> Router {
+#[derive(ApiResponse)]
+enum PoemResponse<T: Send + Type + ToJSON> {
+    #[oai(status = 200)]
+    Ok(poem_openapi::payload::Json<T>),
+
+    #[oai(status = 404)]
+    NotFound(poem_openapi::payload::Json<ErrorMessage>),
+
+    #[oai(status = 500)]
+    InternalServerError(poem_openapi::payload::Json<ErrorMessage>),
+}
+
+fn handle_result<T: Send + Type + ToJSON>(res: Result<T, Error>) -> PoemResponse<T> {
+    match res {
+        Ok(res) => PoemResponse::Ok(poem_openapi::payload::Json(res)),
+        Err(Error::EventDbError(event_db::error::Error::NotFound(error))) => {
+            PoemResponse::NotFound(poem_openapi::payload::Json(ErrorMessage { error }))
+        }
+        Err(error) => {
+            PoemResponse::InternalServerError(poem_openapi::payload::Json(ErrorMessage {
+                error: error.to_string(),
+            }))
+        }
+    }
+}
+
+pub fn app(_state: Arc<State>) -> poem::Route {
+    // build our application with a route
+    let health_api = health::HealthApi;
+    let api_service =
+        OpenApiService::new(health_api, API_NAME, API_VERSION).server("http://localhost:3000");
+    Route::new().nest("", api_service)
+}
+
+#[allow(dead_code)]
+pub fn axum_app(state: Arc<State>) -> axum::Router {
     // build our application with a route
     let v0 = v0::v0(state.clone());
     let v1 = v1::v1(state);
     let health = health::health();
-    Router::new().nest("/api", v1.merge(v0)).merge(health)
+    axum::Router::new().nest("", v1.merge(v0)).merge(health)
 }
 
-fn metrics_app() -> Router {
+#[allow(dead_code)]
+fn metrics_app() -> axum::Router {
     let recorder_handle = setup_metrics_recorder();
-    Router::new().route("/metrics", get(move || ready(recorder_handle.render())))
+    axum::Router::new().route(
+        "/metrics",
+        axum::routing::get(move || ready(recorder_handle.render())),
+    )
 }
 
-fn cors_layer() -> CorsLayer {
-    CorsLayer::new()
+fn cors_layer() -> Cors {
+    // Allow ANY origin and ANY header
+    Cors::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_origin(Any)
-        .allow_headers(Any)
+        .allow_origin("*")
+        .allow_header("*")
 }
 
-async fn run_service(app: Router, addr: &SocketAddr, name: &str) -> Result<(), Error> {
+async fn run_service<E: Endpoint + 'static>(
+    app: E,
+    addr: &SocketAddr,
+    name: &str,
+) -> Result<(), Error> {
     tracing::info!("Starting {name}...");
     tracing::info!("Listening on {addr}");
 
-    axum::Server::bind(addr)
-        .serve(app.into_make_service())
+    poem::Server::new(TcpListener::bind(addr))
+        .run(app)
         .await
         .map_err(|e| Error::CannotRunService(e.to_string()))?;
     Ok(())
@@ -66,33 +112,40 @@ pub async fn run(
     state: Arc<State>,
 ) -> Result<(), Error> {
     let cors = cors_layer();
-    if let Some(metrics_addr) = metrics_addr {
-        let service_app = app(state)
-            .layer(cors.clone())
-            .route_layer(middleware::from_fn(track_metrics));
-        let metrics_app = metrics_app().layer(cors);
+    if let Some(_metrics_addr) = metrics_addr {
+        // let service_app = axum_app(state)
+        //     .layer(cors.clone())
+        //     .route_layer(axum::middleware::from_fn(track_metrics));
+        // let metrics_app = metrics_app().layer(cors);
 
-        tokio::try_join!(
-            run_service(service_app, service_addr, "service"),
-            run_service(metrics_app, metrics_addr, "metrics"),
-        )?;
+        // tokio::try_join!(
+        //     run_service(service_app, service_addr, "service"),
+        //     run_service(metrics_app, metrics_addr, "metrics"),
+        // )?;
+
+        let service_app = app(state).with(cors);
+
+        run_service(service_app, service_addr, "service").await?;
     } else {
-        let service_app = app(state).layer(cors);
+        let service_app = app(state).with(cors);
 
         run_service(service_app, service_addr, "service").await?;
     }
     Ok(())
 }
 
-fn handle_result<T: Serialize>(res: Result<T, Error>) -> Response {
+fn axum_handle_result<T: Serialize>(res: Result<T, Error>) -> axum::response::Response {
+    use axum::response::IntoResponse;
     match res {
-        Ok(res) => (StatusCode::OK, Json(res)).into_response(),
-        Err(Error::EventDbError(event_db::error::Error::NotFound(error))) => {
-            (StatusCode::NOT_FOUND, Json(ErrorMessage { error })).into_response()
-        }
+        Ok(res) => (axum::http::StatusCode::OK, axum::Json(res)).into_response(),
+        Err(Error::EventDbError(event_db::error::Error::NotFound(error))) => (
+            axum::http::StatusCode::NOT_FOUND,
+            axum::Json(ErrorMessage { error }),
+        )
+            .into_response(),
         Err(error) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorMessage {
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(ErrorMessage {
                 error: error.to_string(),
             }),
         )
@@ -115,9 +168,13 @@ fn setup_metrics_recorder() -> PrometheusHandle {
         .unwrap()
 }
 
-async fn track_metrics<T>(req: Request<T>, next: Next<T>) -> impl IntoResponse {
+#[allow(dead_code)]
+async fn track_metrics<T>(
+    req: axum::http::Request<T>,
+    next: axum::middleware::Next<T>,
+) -> impl axum::response::IntoResponse {
     let start = Instant::now();
-    let path = if let Some(matched_path) = req.extensions().get::<MatchedPath>() {
+    let path = if let Some(matched_path) = req.extensions().get::<axum::extract::MatchedPath>() {
         matched_path.as_str().to_owned()
     } else {
         req.uri().path().to_owned()

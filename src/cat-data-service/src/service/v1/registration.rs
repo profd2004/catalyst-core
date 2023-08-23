@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::SerdeType,
 };
@@ -21,14 +21,14 @@ pub fn registration(state: Arc<State>) -> Router {
             "/registration/voter/:voting_key",
             get({
                 let state = state.clone();
-                move |path, query| async { handle_result(voter_exec(path, query, state).await) }
+                move |path, query| async { axum_handle_result(voter_exec(path, query, state).await) }
             }),
         )
         .route(
             "/registration/delegations/:stake_public_key",
             get({
                 move |path, query| async {
-                    handle_result(delegations_exec(path, query, state).await)
+                    axum_handle_result(delegations_exec(path, query, state).await)
                 }
             }),
         )
@@ -108,7 +108,7 @@ async fn delegations_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -118,7 +118,7 @@ mod tests {
     #[tokio::test]
     async fn voter_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!("/api/v1/registration/voter/{0}", "voting_key_1"))
@@ -248,7 +248,7 @@ mod tests {
     #[tokio::test]
     async fn delegations_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!(

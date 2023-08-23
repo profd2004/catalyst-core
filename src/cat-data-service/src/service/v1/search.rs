@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::SerdeType,
 };
@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub fn search(state: Arc<State>) -> Router {
     Router::new().route(
         "/search",
-        post(move |query, body| async { handle_result(search_exec(query, body, state).await) }),
+        post(move |query, body| async { axum_handle_result(search_exec(query, body, state).await) }),
     )
 }
 
@@ -62,7 +62,7 @@ async fn search_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{header, Method, Request, StatusCode},
@@ -72,7 +72,7 @@ mod tests {
     #[tokio::test]
     async fn search_events_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .method(Method::POST)
@@ -393,7 +393,7 @@ mod tests {
     #[tokio::test]
     async fn search_objectives_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .method(Method::POST)
@@ -694,7 +694,7 @@ mod tests {
     #[tokio::test]
     async fn search_proposals_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .method(Method::POST)

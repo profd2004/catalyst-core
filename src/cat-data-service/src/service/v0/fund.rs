@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, Error},
+    service::{axum_handle_result, Error},
     state::State,
     types::SerdeType,
 };
@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub fn fund(state: Arc<State>) -> Router {
     Router::new().route(
         "/fund",
-        get(|| async { handle_result(fund_exec(state).await) }),
+        get(|| async { axum_handle_result(fund_exec(state).await) }),
     )
 }
 
@@ -39,7 +39,7 @@ async fn fund_exec(state: Arc<State>) -> Result<SerdeType<FundWithNext>, Error> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -49,7 +49,7 @@ mod tests {
     #[tokio::test]
     async fn fund_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri("/api/v0/fund".to_string())

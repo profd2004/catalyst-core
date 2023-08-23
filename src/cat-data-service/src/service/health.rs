@@ -1,17 +1,36 @@
+use super::{axum_handle_result, handle_result, PoemResponse};
 use crate::service::Error;
 use axum::{routing::get, Router};
+use poem_openapi::OpenApi;
 
-use super::handle_result;
+pub struct HealthApi;
+
+#[OpenApi]
+impl HealthApi {
+    #[oai(path = "/health/ready", method = "get")]
+    async fn health_ready(&self) -> PoemResponse<bool> {
+        tracing::debug!("health ready exec");
+
+        handle_result(Ok(true))
+    }
+
+    #[oai(path = "/health/live", method = "get")]
+    async fn health_live(&self) -> PoemResponse<bool> {
+        tracing::debug!("health live exec");
+
+        handle_result(Ok(true))
+    }
+}
 
 pub fn health() -> Router {
     Router::new()
         .route(
             "/health/ready",
-            get(|| async { handle_result(ready_exec().await) }),
+            get(|| async { axum_handle_result(ready_exec().await) }),
         )
         .route(
             "/health/live",
-            get(|| async { handle_result(live_exec().await) }),
+            get(|| async { axum_handle_result(live_exec().await) }),
         )
 }
 
@@ -44,7 +63,7 @@ async fn live_exec() -> Result<bool, Error> {
 /// https://github.com/input-output-hk/catalyst-core/tree/main/src/event-db/Readme.md
 #[cfg(test)]
 mod tests {
-    use crate::{service::app, state::State};
+    use crate::{service::axum_app, state::State};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -55,7 +74,7 @@ mod tests {
     #[tokio::test]
     async fn health_ready_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri("/health/ready".to_string())
@@ -74,7 +93,7 @@ mod tests {
     #[tokio::test]
     async fn health_live_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri("/health/live".to_string())

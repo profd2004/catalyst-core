@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, v1::LimitOffset, Error},
+    service::{axum_handle_result, v1::LimitOffset, Error},
     state::State,
     types::SerdeType,
 };
@@ -30,7 +30,7 @@ pub fn proposal(state: Arc<State>) -> Router {
                     "/",
                     get({
                         let state = state.clone();
-                        move |path| async { handle_result(proposal_exec(path, state).await) }
+                        move |path| async { axum_handle_result(proposal_exec(path, state).await) }
                     }),
                 )
                 .merge(review)
@@ -39,7 +39,7 @@ pub fn proposal(state: Arc<State>) -> Router {
         .route(
             "/proposals",
             get(move |path, query| async {
-                handle_result(proposals_exec(path, query, state).await)
+                axum_handle_result(proposals_exec(path, query, state).await)
             }),
         )
 }
@@ -109,7 +109,7 @@ async fn proposal_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -119,7 +119,7 @@ mod tests {
     #[tokio::test]
     async fn proposal_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!(
@@ -172,7 +172,7 @@ mod tests {
     #[tokio::test]
     async fn proposals_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!("/api/v1/event/{0}/objective/{1}/proposals", 1, 1))

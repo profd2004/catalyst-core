@@ -1,5 +1,5 @@
 use crate::{
-    service::{handle_result, v1::LimitOffset, Error},
+    service::{axum_handle_result, v1::LimitOffset, Error},
     state::State,
     types::SerdeType,
 };
@@ -16,7 +16,7 @@ use std::sync::Arc;
 pub fn review(state: Arc<State>) -> Router {
     Router::new().route(
         "/reviews",
-        get(move |path, query| async { handle_result(reviews_exec(path, query, state).await) }),
+        get(move |path, query| async { axum_handle_result(reviews_exec(path, query, state).await) }),
     )
 }
 
@@ -64,7 +64,7 @@ async fn reviews_exec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::service::{app, tests::body_data_json_check};
+    use crate::service::{axum_app, tests::body_data_json_check};
     use axum::{
         body::{Body, HttpBody},
         http::{Request, StatusCode},
@@ -74,7 +74,7 @@ mod tests {
     #[tokio::test]
     async fn reviews_test() {
         let state = Arc::new(State::new(None).await.unwrap());
-        let app = app(state);
+        let app = axum_app(state);
 
         let request = Request::builder()
             .uri(format!(
