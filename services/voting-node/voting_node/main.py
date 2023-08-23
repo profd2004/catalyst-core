@@ -6,6 +6,7 @@ Main entrypoint for executing the voting node service from the shell command-lin
 import click
 import uvicorn
 from ideascale_importer.utils import configure_logger
+
 from . import api, service
 from .envvar import (
     EVENTDB_URL,
@@ -16,8 +17,8 @@ from .envvar import (
     JORM_PORT_P2P,
     JORM_PORT_REST,
     VOTING_HOST,
-    VOTING_LOG_LEVEL,
     VOTING_LOG_FORMAT,
+    VOTING_LOG_LEVEL,
     VOTING_NODE_ROLE,
     VOTING_NODE_STORAGE,
     VOTING_PORT,

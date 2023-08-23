@@ -1,17 +1,17 @@
+import socket
 from datetime import datetime
 from pathlib import Path
-import socket
+
 import pytest
+
 from voting_node.db import EventDb
 from voting_node.models import Contribution, Event, HostInfo, Objective, Proposal, ServiceSettings, Voter, VotingGroup
-
 from voting_node.tasks import Leader0Schedule
-
 
 # Test Fixtures
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_event():
     return Event(
         row_id=1234,
@@ -24,19 +24,23 @@ def mock_event():
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def leader0_host_info(mock_event, mock_leader0_hostname):
     return HostInfo(
-        hostname=mock_leader0_hostname, event=mock_event.row_id, seckey="secretkey", pubkey="publickey", netkey="netkey"
+        hostname=mock_leader0_hostname,
+        event=mock_event.row_id,
+        seckey="secretkey",
+        pubkey="publickey",
+        netkey="netkey",
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def voting_groups():
     return [VotingGroup(name="direct"), VotingGroup(name="rep")]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_voters():
     return [
         Voter(1, "votekey", 1, "direct", 5000),
@@ -48,7 +52,7 @@ def mock_voters():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_contributions():
     return [
         Contribution(1, "stakekey", 1, "direct", 5000, "votekey", 1),
@@ -60,7 +64,7 @@ def mock_contributions():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_objectives():
     return [
         Objective(1, 1001, 1, "Category", "Title", "Description", False, "ADA"),
@@ -70,28 +74,140 @@ def mock_objectives():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_proposals():
     return [
-        Proposal(1, 301, 1, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(2, 302, 1, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(3, 303, 1, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(4, 304, 2, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(5, 305, 2, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(6, 306, 3, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
-        Proposal(7, 307, 4, "Title", "Summary", "Category", "publickey", 7000000, "http://url", "http://files", 1.0, "Name", "Contact", "http://proposer", "Experience"),
+        Proposal(
+            1,
+            301,
+            1,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            2,
+            302,
+            1,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            3,
+            303,
+            1,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            4,
+            304,
+            2,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            5,
+            305,
+            2,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            6,
+            306,
+            3,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
+        Proposal(
+            7,
+            307,
+            4,
+            "Title",
+            "Summary",
+            "Category",
+            "publickey",
+            7000000,
+            "http://url",
+            "http://files",
+            1.0,
+            "Name",
+            "Contact",
+            "http://proposer",
+            "Experience",
+        ),
     ]
 
 
 ## Monkeypatches
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_leader0_hostname(monkeypatch):
     monkeypatch.setattr(socket, "gethostname", "leader0")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_upcoming_event(monkeypatch, mock_event):
     async def mock_db_call(*args, **kwargs):
         return mock_event
@@ -99,7 +215,7 @@ def mock_db_fetch_upcoming_event(monkeypatch, mock_event):
     monkeypatch.setattr(EventDb, "fetch_upcoming_event", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_leader0_host_info(monkeypatch, leader0_host_info):
     async def mock_db_call(*args, **kwargs):
         return leader0_host_info
@@ -107,7 +223,7 @@ def mock_db_fetch_leader0_host_info(monkeypatch, leader0_host_info):
     monkeypatch.setattr(EventDb, "fetch_leader_host_info", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_check_if_snapshot_is_final(monkeypatch):
     async def mock_db_call(*args, **kwargs):
         return True
@@ -115,7 +231,7 @@ def mock_db_check_if_snapshot_is_final(monkeypatch):
     monkeypatch.setattr(EventDb, "check_if_snapshot_is_final", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_voting_groups(monkeypatch, voting_groups):
     async def mock_db_call(*args, **kwargs):
         return voting_groups
@@ -123,7 +239,7 @@ def mock_db_fetch_voting_groups(monkeypatch, voting_groups):
     monkeypatch.setattr(EventDb, "fetch_voting_groups", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_voters(monkeypatch, mock_voters):
     async def mock_db_call(*args, **kwargs):
         return mock_voters
@@ -131,7 +247,7 @@ def mock_db_fetch_voters(monkeypatch, mock_voters):
     monkeypatch.setattr(EventDb, "fetch_voters", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_contributions(monkeypatch, mock_contributions):
     async def mock_db_call(*args, **kwargs):
         return mock_contributions
@@ -139,7 +255,7 @@ def mock_db_fetch_contributions(monkeypatch, mock_contributions):
     monkeypatch.setattr(EventDb, "fetch_contributions", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_objectives(monkeypatch, mock_objectives):
     async def mock_db_call(*args, **kwargs):
         return mock_objectives
@@ -147,7 +263,7 @@ def mock_db_fetch_objectives(monkeypatch, mock_objectives):
     monkeypatch.setattr(EventDb, "fetch_objectives", mock_db_call)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db_fetch_proposals(monkeypatch, mock_proposals):
     async def mock_db_call(*args, **kwargs):
         return mock_proposals
@@ -158,7 +274,7 @@ def mock_db_fetch_proposals(monkeypatch, mock_proposals):
 # TESTS
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_leader0_schedule_instantiates_with_defaults():
     schedule = Leader0Schedule()
     assert schedule.settings == ServiceSettings()
@@ -167,7 +283,7 @@ async def test_leader0_schedule_instantiates_with_defaults():
     assert schedule.current_task is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_task_node_fetch_event(mock_event, mock_db_fetch_upcoming_event):
     schedule = Leader0Schedule()
 
@@ -175,7 +291,7 @@ async def test_task_node_fetch_event(mock_event, mock_db_fetch_upcoming_event):
     assert schedule.node.event == mock_event
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_task_node_fetch_host_keys(leader0_host_info, mock_event, mock_db_fetch_leader0_host_info):
     schedule = Leader0Schedule()
 
@@ -185,12 +301,15 @@ async def test_task_node_fetch_host_keys(leader0_host_info, mock_event, mock_db_
     assert schedule.node.host_info == leader0_host_info
 
 
-### TODO: Other tasks
-
-
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_task_node_snapshot_data(
-    mock_event, mock_db_check_if_snapshot_is_final, mock_db_fetch_voting_groups, mock_db_fetch_voters, mock_db_fetch_contributions, mock_db_fetch_objectives, mock_db_fetch_proposals
+    mock_event,
+    mock_db_check_if_snapshot_is_final,
+    mock_db_fetch_voting_groups,
+    mock_db_fetch_voters,
+    mock_db_fetch_contributions,
+    mock_db_fetch_objectives,
+    mock_db_fetch_proposals,
 ):
     schedule = Leader0Schedule()
 

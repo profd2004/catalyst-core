@@ -390,23 +390,6 @@ class Voter:
     # The voting power associated with this key
     voting_power: int
 
-@dataclass
-class Objective:
-    row_id: int
-    id: int
-    event: int
-    category: str
-    title: str
-    description: str
-    deleted: bool
-    rewards_currency: str | None = None
-    rewards_total: int | None = None
-    rewards_total_lovelace: int | None = None
-    proposers_rewards: int | None = None
-    vote_options: int | None = None
-
-    extra: Mapping[str, Any] | None = None
-
 
 @dataclass
 class Objective:

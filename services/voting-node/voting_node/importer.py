@@ -29,7 +29,8 @@ import os
 from datetime import datetime
 
 from ideascale_importer.ideascale.importer import Importer as IdeascaleImporter
-from ideascale_importer.snapshot_importer import Importer as DBSyncImporter, SSHConfig as SnapshotToolSSHConfig
+from ideascale_importer.snapshot_importer import Importer as DBSyncImporter
+from ideascale_importer.snapshot_importer import SSHConfig as SnapshotToolSSHConfig
 from loguru import logger
 from pydantic import BaseModel
 
@@ -105,7 +106,7 @@ class ExternalDataImporter:
                 raise Exception(
                     "SSH_SNAPSHOT_TOOL_PATH, SSH_SNAPSHOT_TOOL_OUTPUT_DIR, "
                     "SSH_SNAPSHOT_TOOL_OUTPUT_DIR and SSH_SNAPSHOT_TOOL_DESTINATION "
-                    "are all required when SNAPSHOT_TOOL_SSH is set"
+                    "are all required when SNAPSHOT_TOOL_SSH is set",
                 )
         else:
             ssh_config = None

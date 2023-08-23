@@ -5,7 +5,6 @@ import re
 import secrets
 import socket
 from pathlib import Path
-from re import Match
 from typing import Final, Literal
 
 import yaml

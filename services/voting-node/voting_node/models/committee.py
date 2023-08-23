@@ -1,10 +1,11 @@
 """Committee of members that will tally the votes."""
+from pathlib import Path
+from typing import Self
+
 import yaml
 from aiofile import async_open
 from loguru import logger
-from pathlib import Path
 from pydantic import BaseModel
-from typing import Self
 
 
 class WalletKeys(BaseModel):
