@@ -1,6 +1,16 @@
-"""Wrapper for the jcli command-line executable."""
+"""Wrapper for the jcli command-line executable.
+
+>>> import asyncio
+>>> from voting_node.jcli import JCli
+>>> j = JCli('jcli')
+>>> sk = asyncio.run(j.key_generate())
+>>> pk = asyncio.run(j.key_to_public(sk))
+>>> key_bytes = asyncio.run(j.key_to_bytes(pk))
+>>> assert pk == asyncio.run(j.key_from_bytes_public(key_bytes))
+"""
 import asyncio
 from pathlib import Path
+from typing import Literal
 
 from .models.committee import ElectionKey
 
@@ -40,7 +50,7 @@ class JCli:
         key = data.decode().rstrip()
         return key
 
-    async def key_to_public(self, seckey: str) -> str:
+    async def key_to_public(self, input: str) -> str:
         """Return a public key the given secret key string."""
         # run jcli to generate the secret key
         proc = await asyncio.create_subprocess_exec(
@@ -51,7 +61,7 @@ class JCli:
             stdin=asyncio.subprocess.PIPE,
         )
 
-        stdout, _ = await proc.communicate(input=seckey.encode())
+        stdout, _ = await proc.communicate(input=input.encode())
         # checks that there is stdout
         if stdout is None:
             raise Exception("failed to generate secret")
@@ -59,7 +69,7 @@ class JCli:
         key = stdout.decode().rstrip()
         return key
 
-    async def key_to_bytes(self, key: str) -> str:
+    async def key_to_bytes(self, input: str) -> str:
         """Return the hex-encoded bytes of a given key string."""
         # run jcli to generate the secret key
         proc = await asyncio.create_subprocess_exec(
@@ -70,13 +80,68 @@ class JCli:
             stdin=asyncio.subprocess.PIPE,
         )
 
-        stdout, _ = await proc.communicate(input=key.encode())
+        stdout, _ = await proc.communicate(input=input.encode())
         # checks that there is stdout
         if stdout is None:
-            raise Exception("failed to generate secret")
+            raise Exception("failed to convert key to bytes")
         # read the output
         key = stdout.decode().rstrip()
         return key
+
+    async def key_from_bytes_public(self, input: str, secret_type: Literal["ed25519"] = "ed25519") -> str:
+        """Return the ed25519 public key from a given hex-string."""
+        # run jcli to generate the secret key
+        proc = await asyncio.create_subprocess_exec(
+            self.jcli_exec,
+            "key",
+            "from-bytes",
+            "--type",
+            secret_type,
+            "--public",
+            stdout=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.PIPE,
+        )
+
+        stdout, _ = await proc.communicate(input=input.encode())
+        # checks that there is stdout
+        if stdout is None:
+            raise Exception("failed to generate public key")
+        # read the output
+        key = stdout.decode().rstrip()
+        return key
+
+    async def address_single(self, public_key: str, prefix: str = "ca") -> str:
+        """Run 'jcli address single' to create an address from a public key.
+
+        This address is used to enconde voting keys in the genesis block.
+
+        >>> import asyncio
+        >>> from voting_node.jcli import JCli
+        >>>
+        >>> j = JCli('jcli')
+        >>> asyncio.run(j.address_single("ed25519_pk1g2tzewz2luetdt8j5csrppzsjutz9ejfhgxefmclw42436rgqfzsdx94wp"))
+        'ca1qdpfvt9cftln9d4v72nzqvyy2zt3vghxfxaqm980ra642k8gdqpy2wlwhcw'
+        """
+        proc_args = (
+            "address",
+            "single",
+            public_key,
+            "--prefix",
+            prefix,
+        )
+        proc = await asyncio.create_subprocess_exec(
+            self.jcli_exec,
+            *proc_args,
+            stdout=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.PIPE,
+        )
+        # checks that there is stdout
+        stdout, _ = await proc.communicate()
+        if stdout is None:
+            raise Exception("failed to generate address from public key")
+        # read the output
+        out = stdout.decode().rstrip()
+        return out
 
     async def votes_committee_communication_key_generate(self) -> str:
         """Run 'jcli genesis encode' to make block0 from genesis.yaml."""
@@ -99,7 +164,7 @@ class JCli:
         commkey = stdout.decode().rstrip()
         return commkey
 
-    async def votes_committee_communication_key_to_public(self, input_key: str) -> str:
+    async def votes_committee_communication_key_to_public(self, input: str) -> str:
         """Run 'jcli vote committee communication-key to-public [INPUT]' to return the public communication key."""
         proc_args = (
             "votes",
@@ -114,7 +179,7 @@ class JCli:
             stdin=asyncio.subprocess.PIPE,
         )
         # checks that there is stdout
-        stdout, _ = await proc.communicate(input=input_key.encode())
+        stdout, _ = await proc.communicate(input=input.encode())
         if stdout is None:
             raise Exception("failed to generate committee public communication key")
         # read the output
